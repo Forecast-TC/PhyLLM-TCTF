@@ -23,6 +23,9 @@ class TyphoonTrackPredictor(nn.Module):
         self.himawari_encoder = HimawariEncoder(in_channels=4, out_channels=feat_dim)
         self.era5_encoder = ERA5Encoder(in_channels=36, out_channels=feat_dim)
 
+        self.era_feature_norm = nn.LayerNorm(feat_dim)
+        self.himawari_feature_norm = nn.LayerNorm(feat_dim)
+
         self.physics_proj = nn.Linear(5, self.d_model)
         self.env_proj = nn.Linear(128 + 128, self.d_model)
 
@@ -46,8 +49,8 @@ class TyphoonTrackPredictor(nn.Module):
     def forward(self, track, era5, himawari):
         B, T, _ = track.shape
 
-        e_feat = self.era5_encoder(era5)
-        h_feat = self.himawari_encoder(himawari)
+        e_feat = self.era_feature_norm(self.era5_encoder(era5))
+        h_feat = self.himawari_feature_norm(self.himawari_encoder(himawari))
         env_h = self.env_proj(torch.cat([e_feat, h_feat], dim=-1))
 
         track_phys = calculate_physics_features(track)
