@@ -97,8 +97,11 @@ Key configurable parameters:
 --feat_dim           128     # Hidden feature dimension
 --batch_size         8       # Batch size
 --lr                 1e-3    # Adam learning rate
+--lr_step_size       30      # Epochs between StepLR learning-rate reductions
+--lr_gamma           0.5     # Multiplicative learning-rate decay factor
 --num_epochs         200     # Maximum training epochs
 --patience           20      # Early-stopping patience
+--min_early_stopping_patience 45  # Minimum effective early-stopping patience
 --smooth_loss_weight 0.3     # Track smoothness regularisation weight
---loss               MSE     # Base loss: MSE or L1
+--loss               MSE     # Base loss: MSE, L1 or euclidean
 ```
