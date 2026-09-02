@@ -98,38 +98,40 @@ class ERA5Encoder(nn.Module):
         return feat
 
 
+class HimawariBlock(nn.Module):
+    """Normalized convolution followed by pre-norm residual attention."""
+
+    def __init__(self, in_channels, out_channels, groups=8):
+        super().__init__()
+        self.conv = nn.Conv3d(
+            in_channels, out_channels, kernel_size=3,
+            stride=(1, 2, 2), padding=1, bias=False
+        )
+        self.conv_norm = nn.GroupNorm(groups, out_channels)
+        self.activation = nn.GELU()
+        self.attention_norm = nn.GroupNorm(groups, out_channels)
+        self.attention = ST_LKA_Attention(out_channels)
+        self.attention_scale = nn.Parameter(torch.tensor(0.1))
+
+    def forward(self, x):
+        x = self.activation(self.conv_norm(self.conv(x)))
+        attended = self.attention(self.attention_norm(x))
+        return x + self.attention_scale * attended
+
+
 class HimawariEncoder(nn.Module):
     def __init__(self, in_channels, out_channels=128):
         super(HimawariEncoder, self).__init__()
-        self.layer1 = nn.Sequential(
-            nn.Conv3d(in_channels, 32, (3, 3, 3), (1, 2, 2), (1, 1, 1)),
-            nn.ReLU(),
-            ST_LKA_Attention(32)
-        )
-        self.layer2 = nn.Sequential(
-            nn.Conv3d(32, 64, (3, 3, 3), (1, 2, 2), (1, 1, 1)),
-            nn.ReLU(),
-            ST_LKA_Attention(64)
-        )
-        self.layer3 = nn.Sequential(
-            nn.Conv3d(64, 128, (3, 3, 3), (1, 2, 2), (1, 1, 1)),
-            nn.ReLU(),
-            ST_LKA_Attention(128)
-        )
-        self.layer4 = nn.Sequential(
-            nn.Conv3d(128, 256, (3, 3, 3), (1, 2, 2), (1, 1, 1)),
-            nn.ReLU(),
-            ST_LKA_Attention(256)
-        )
-        self.layer5 = nn.Sequential(
-            nn.Conv3d(256, 128, (3, 3, 3), (1, 2, 2), (1, 1, 1)),
-            nn.ReLU(),
-            ST_LKA_Attention(128)
-        )
+        self.layer1 = HimawariBlock(in_channels, 32)
+        self.layer2 = HimawariBlock(32, 64)
+        self.layer3 = HimawariBlock(64, 128)
+        self.layer4 = HimawariBlock(128, 256)
+        self.layer5 = HimawariBlock(256, 128)
         self.fusion = nn.Sequential(
             nn.AdaptiveAvgPool3d((None, 1, 1)),
             nn.Conv3d(128, out_channels, 1, bias=False),
-            nn.ReLU()
+            nn.GroupNorm(8, out_channels),
+            nn.GELU()
         )
 
     def forward(self, x):
