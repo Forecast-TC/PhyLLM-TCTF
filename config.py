@@ -38,7 +38,7 @@ def get_args():
 
     parser.add_argument(
         "--checkpoint", type=str,
-        default="./model_weights/checkpoint52.pth",
+        default="./model_weights/checkpoint33.pth",
         help="[test.py only] Path to a trained model checkpoint (.pth)"
     )
 
@@ -92,8 +92,20 @@ def get_args():
         help="Weight of the trajectory-smoothness regularisation term (default: 0.3)"
     )
     parser.add_argument(
-        "--loss", type=str, default="MSE", choices=["MSE", "L1"],
-        help="Base reconstruction loss: MSE or L1 (default: MSE)"
+        "--loss", type=str, default="MSE", choices=["MSE", "L1", "euclidean"],
+        help="Base reconstruction loss: MSE, L1 or euclidean (default: MSE)"
+    )
+    parser.add_argument(
+        "--lr_step_size", type=int, default=30,
+        help="Number of epochs between StepLR reductions (default: 30)"
+    )
+    parser.add_argument(
+        "--lr_gamma", type=float, default=0.5,
+        help="Multiplicative StepLR decay factor (default: 0.5)"
+    )
+    parser.add_argument(
+        "--min_early_stopping_patience", type=int, default=45,
+        help="Minimum effective early-stopping patience (default: 45)"
     )
     parser.add_argument(
         "--seed", type=int, default=42,
